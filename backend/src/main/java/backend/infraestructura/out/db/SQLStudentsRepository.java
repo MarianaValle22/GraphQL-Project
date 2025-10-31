@@ -18,21 +18,38 @@ public class SQLStudentsRepository implements StudentRepository {
 
     private void crearTablaSiNoExiste() {
         String sql = """
-                CREATE TABLE IF NOT EXISTS estudiantes (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    nombre TEXT NOT NULL,
-                    edad INTEGER NOT NULL,
-                    carrera TEXT NOT NULL
-                );
-                """;
+            CREATE TABLE IF NOT EXISTS estudiantes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT NOT NULL,
+                edad INTEGER NOT NULL,
+                carrera TEXT NOT NULL
+            );
+            """;
 
         try (Connection conn = SQLConfig.getConnection();
              Statement stmt = conn.createStatement()) {
             stmt.execute(sql);
+
+            String countSql = "SELECT COUNT(*) FROM estudiantes";
+            try (ResultSet rs = stmt.executeQuery(countSql)) {
+                if (rs.next() && rs.getInt(1) == 0) {
+                    System.out.println("- Base vacía, insertando datos iniciales...");
+                    String insertSql = """
+                        INSERT INTO estudiantes (nombre, edad, carrera) VALUES
+                        ('María López', 22, 'Ingeniería de Sistemas'),
+                        ('Juan Pérez', 23, 'Analítica de Datos'),
+                        ('Camila Gómez', 21, 'Administración');
+                        """;
+                    stmt.execute(insertSql);
+                    System.out.println("- Datos iniciales insertados correctamente.");
+                }
+            }
+
         } catch (SQLException e) {
-            System.err.println("Error creando tabla: " + e.getMessage());
+            e.printStackTrace();
         }
     }
+
 
     // Si la tabla está vacía, ejecuta el script init.sql para cargar los datos
     private void inicializarBaseSiVacia() {
