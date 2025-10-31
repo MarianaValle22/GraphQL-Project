@@ -5,14 +5,14 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
-import static org.springframework.security.config.Customizer.withDefaults;
-
 import org.springframework.context.annotation.Primary;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
 
 @Configuration
 public class securityConfig {
@@ -22,8 +22,12 @@ public class securityConfig {
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration cfg = new CorsConfiguration();
     cfg.setAllowCredentials(true);
-    cfg.addAllowedOrigin("http://localhost:5174");
-    // cfg.addAllowedOrigin("https://tu-dominio-front.com");
+    cfg.setAllowedOrigins(Arrays.asList(
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://localhost:5175",
+      "http://localhost:5176"
+    ));
     cfg.addAllowedHeader("Content-Type");
     cfg.addAllowedHeader("Authorization");
     cfg.addAllowedMethod("POST");
