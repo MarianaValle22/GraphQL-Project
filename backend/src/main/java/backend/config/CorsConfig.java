@@ -8,22 +8,17 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class CorsConfig {
 
-    @Bean
-    public WebMvcConfigurer corsConfigurer() {
-        return new WebMvcConfigurer() {
-            @Override
-            public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/graphql")
-                        .allowedOrigins(
-                                "http://localhost:5174" // origen del frontend (Vite)
-                // ,"https://tu-dominio-del-front.com" // agrega tu dominio cuando publiques el
-                // front
-                )
-                        .allowedMethods("POST", "OPTIONS")
-                        .allowedHeaders("Content-Type", "Authorization")
-                        .allowCredentials(true);
-            }
-        };
-    }
+  @Bean
+  public WebMvcConfigurer corsConfigurer() {
+    return new WebMvcConfigurer() {
+      @Override
+      public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/graphql")
+          .allowedOrigins("http://localhost:5174")
+          .allowedMethods("POST", "OPTIONS")
+          .allowedHeaders("Content-Type", "Authorization")
+          .allowCredentials(true);
+      }
+    };
+  }
 }
-
