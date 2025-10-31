@@ -1,0 +1,21 @@
+type Query {
+  # Consulta las razas de gatos
+  getRazaByID(id: ID!): Raza
+
+  # Consulta todos los estudiantes
+  getEstudiantes: [Estudiante]
+}
+
+type Raza {
+  id: ID!
+  nombre: String
+  origen: String
+  descripcion: String
+}
+
+type Estudiante {
+  id: ID!
+  nombre: String
+  edad: Int
+  carrera: String
+}
