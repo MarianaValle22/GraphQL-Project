@@ -1,13 +1,9 @@
 services:
   - type: web
     name: graphql-backend
-    runtime: java
-    plan: free
+    runtime: docker
     rootDir: backend
-    buildCommand: mvn clean package -DskipTests
-    startCommand: java -jar target/*.jar
+    plan: free
     envVars:
-      - key: JAVA_VERSION
-        value: 17
       - key: THE_CAT_API_KEY
         sync: false
