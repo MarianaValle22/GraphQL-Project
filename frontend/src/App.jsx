@@ -1,11 +1,84 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { gql } from '@apollo/client';
 import { useLazyQuery } from '@apollo/client/react';
+
+// Cat breeds (id -> nombre) para autocompletado estático
+const TOP_BREEDS = [
+  { id: 'abys', nombre: 'Abyssinian' },
+  { id: 'aege', nombre: 'Aegean' },
+  { id: 'abob', nombre: 'American Bobtail' },
+  { id: 'acur', nombre: 'American Curl' },
+  { id: 'asho', nombre: 'American Shorthair' },
+  { id: 'awir', nombre: 'American Wirehair' },
+  { id: 'amau', nombre: 'Arabian Mau' },
+  { id: 'abas', nombre: 'Australian Mist' },
+  { id: 'bali', nombre: 'Balinese' },
+  { id: 'bamb', nombre: 'Bambino' },
+  { id: 'beng', nombre: 'Bengal' },
+  { id: 'birm', nombre: 'Birman' },
+  { id: 'bomb', nombre: 'Bombay' },
+  { id: 'bslo', nombre: 'British Longhair' },
+  { id: 'bsho', nombre: 'British Shorthair' },
+  { id: 'buri', nombre: 'Burmese' },
+  { id: 'bure', nombre: 'Burmilla' },
+  { id: 'cspa', nombre: 'California Spangled' },
+  { id: 'ctif', nombre: 'Chantilly-Tiffany' },
+  { id: 'char', nombre: 'Chartreux' },
+  { id: 'chau', nombre: 'Chausie' },
+  { id: 'chee', nombre: 'Cheetoh' },
+  { id: 'csho', nombre: 'Colorpoint Shorthair' },
+  { id: 'crex', nombre: 'Cornish Rex' },
+  { id: 'cymr', nombre: 'Cymric' },
+  { id: 'cypr', nombre: 'Cyprus' },
+  { id: 'drex', nombre: 'Devon Rex' },
+  { id: 'dshi', nombre: 'Domestic Short Hair' },
+  { id: 'dupa', nombre: 'Donskoy' },
+  { id: 'lihu', nombre: 'Dragon Li' },
+  { id: 'emau', nombre: 'Egyptian Mau' },
+  { id: 'ebur', nombre: 'European Burmese' },
+  { id: 'esho', nombre: 'Exotic Shorthair' },
+  { id: 'hbro', nombre: 'Havana Brown' },
+  { id: 'hima', nombre: 'Himalayan' },
+  { id: 'japa', nombre: 'Japanese Bobtail' },
+  { id: 'java', nombre: 'Javanese' },
+  { id: 'khao', nombre: 'Khao Manee' },
+  { id: 'kora', nombre: 'Korat' },
+  { id: 'kuri', nombre: 'Kurilian' },
+  { id: 'lape', nombre: 'LaPerm' },
+  { id: 'mcoo', nombre: 'Maine Coon' },
+  { id: 'mala', nombre: 'Malayan' },
+  { id: 'manc', nombre: 'Munchkin' },
+  { id: 'muns', nombre: 'Munchkin Longhair' },
+  { id: 'nebe', nombre: 'Nebelung' },
+  { id: 'norw', nombre: 'Norwegian Forest Cat' },
+  { id: 'ocic', nombre: 'Ocicat' },
+  { id: 'orie', nombre: 'Oriental' },
+  { id: 'pers', nombre: 'Persian' },
+  { id: 'pixi', nombre: 'Pixie-bob' },
+  { id: 'raga', nombre: 'Ragamuffin' },
+  { id: 'ragd', nombre: 'Ragdoll' },
+  { id: 'rblu', nombre: 'Russian Blue' },
+  { id: 'sava', nombre: 'Savannah' },
+  { id: 'sfol', nombre: 'Scottish Fold' },
+  { id: 'sfra', nombre: 'Scottish Straight' },
+  { id: 'sphy', nombre: 'Sphynx' },
+  { id: 'siam', nombre: 'Siamese' },
+  { id: 'sibe', nombre: 'Siberian' },
+  { id: 'sing', nombre: 'Singapura' },
+  { id: 'snow', nombre: 'Snowshoe' },
+  { id: 'soma', nombre: 'Somali' },
+  { id: 'tonk', nombre: 'Tonkinese' },
+  { id: 'toyg', nombre: 'Toyger' },
+  { id: 'tman', nombre: 'Turkish Angora' },
+  { id: 'tbal', nombre: 'Turkish Van' },
+  { id: 'ycho', nombre: 'York Chocolate' },
+];
+
 
 const STUDENT_FIELDS = ['id', 'nombre', 'edad', 'carrera'];
 const BREED_FIELDS = ['id', 'nombre', 'origen', 'descripcion'];
 
-// Documentos GraphQL
+// GraphQL
 const Q_ESTUDIANTES = gql`
   query GetEstudiantes {
     getEstudiantes {
@@ -32,7 +105,12 @@ export default function App() {
   const [resource, setResource] = useState('getEstudiantes'); // getEstudiantes | getRazaByID
   const [studentFields, setStudentFields] = useState(['id', 'nombre']);
   const [breedFields, setBreedFields] = useState(['id', 'nombre']);
+
+  // Autocompletado
+  const [search, setSearch] = useState('');
   const [breedId, setBreedId] = useState('');
+  const [openMenu, setOpenMenu] = useState(false);
+  const menuRef = useRef(null);
 
   const [fetchEstudiantes, { data: dataEst, loading: loadingEst, error: errorEst }] = useLazyQuery(Q_ESTUDIANTES);
   const [fetchRaza, { data: dataRaza, loading: loadingRaza, error: errorRaza }] = useLazyQuery(Q_RAZA);
@@ -73,11 +151,33 @@ export default function App() {
     }
   };
 
+  // Opciones de autocompletado (filtra sobre las 15)
+  const breedOptions = useMemo(() => {
+    if (!search.trim()) return TOP_BREEDS;
+    const s = search.toLowerCase();
+    return TOP_BREEDS.filter(b => b.nombre.toLowerCase().includes(s));
+  }, [search]);
+
+  const onPickBreed = (opt) => {
+    setSearch(opt.nombre);
+    setBreedId(opt.id);
+    setOpenMenu(false);
+  };
+
+  useEffect(() => {
+    const onClick = (e) => {
+      if (!menuRef.current) return;
+      if (!menuRef.current.contains(e.target)) setOpenMenu(false);
+    };
+    window.addEventListener('click', onClick);
+    return () => window.removeEventListener('click', onClick);
+  }, []);
+
+  // Datos y proyección
   const loading = loadingEst || loadingRaza;
   const error = errorEst || errorRaza;
   const data = resource === 'getEstudiantes' ? dataEst : dataRaza;
 
-  // Proyectar los campos seleccionados en el render
   const projectData = (raw) => {
     if (!raw) return raw;
     if (resource === 'getEstudiantes') {
@@ -121,14 +221,37 @@ export default function App() {
 
           {resource === 'getRazaByID' && (
             <div style={styles.field}>
-              <label style={styles.label}>ID de raza</label>
+              <label style={styles.label}>Buscar raza</label>
+              <div style={styles.comboWrap} ref={menuRef}>
+                <input
+                  value={search}
+                  onChange={(e) => { setSearch(e.target.value); setOpenMenu(true); }}
+                  onFocus={() => setOpenMenu(true)}
+                  placeholder="Escribe el nombre (p. ej. Bengal)"
+                  style={styles.input}
+                />
+                {openMenu && breedOptions.length > 0 && (
+                  <div style={styles.menu}>
+                    {breedOptions.map(opt => (
+                      <div key={opt.id} style={styles.menuItem} onClick={() => onPickBreed(opt)}>
+                        <span style={styles.menuName}>{opt.nombre}</span>
+                        <span style={styles.menuId}>{opt.id}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <label style={{ ...styles.label, marginTop: 10 }}>ID seleccionado</label>
               <input
                 value={breedId}
                 onChange={(e) => setBreedId(e.target.value)}
-                placeholder="p.ej. abys"
+                placeholder="ID (p. ej. abys)"
                 style={styles.input}
               />
-              <div style={styles.hint}>Este ID será la variable $id en la consulta.</div>
+              <div style={styles.hint}>
+                Si no aparece en el Top 15, escribe el ID manualmente y ejecuta la consulta.
+              </div>
             </div>
           )}
 
@@ -149,7 +272,7 @@ export default function App() {
               style={styles.buttonPrimary}
               onClick={run}
               disabled={!selected.length || loading || (resource === 'getRazaByID' && !breedId)}
-              title={resource === 'getRazaByID' && !breedId ? 'Ingresa un ID de raza' : ''}
+              title={resource === 'getRazaByID' && !breedId ? 'Ingresa o elige una raza' : ''}
             >
               {loading ? 'Ejecutando…' : 'Ejecutar'}
             </button>
@@ -181,36 +304,55 @@ export default function App() {
       </main>
 
       <footer style={styles.footer}>
-        <span>Hecho con React + Vite • Query con variables y campos seleccionables</span>
+        <span>Hecho con React + Vite • Autocompletado Top‑15 y estilo mejorado</span>
       </footer>
     </div>
   );
 }
 
 const styles = {
-  page: { minHeight: '100vh', background: 'linear-gradient(180deg,#0b0f14,#0e141b)', color: '#e6eef7', display: 'flex', flexDirection: 'column' },
-  header: { padding: '20px 28px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'baseline', gap: 16 },
+  page: { minHeight: '100vh', background: 'linear-gradient(180deg,#0a0f1a,#0c1220)', color: '#eef3fb', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif' },
+  header: { padding: '22px 28px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'baseline', gap: 16 },
   brand: { display: 'flex', alignItems: 'center', gap: 10 },
-  dot: { width: 10, height: 10, borderRadius: 10, background: 'linear-gradient(135deg,#6ee7ff,#8b5cf6)' },
-  title: { fontSize: 18, letterSpacing: 0.5, fontWeight: 600 },
-  subtitle: { opacity: 0.7, fontSize: 13 },
-  main: { display: 'grid', gridTemplateColumns: '360px 1fr', gap: 20, padding: 24, maxWidth: 1200, width: '100%', margin: '0 auto', flex: 1 },
-  panelLeft: { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: 16 },
+  dot: { width: 12, height: 12, borderRadius: 12, background: 'linear-gradient(135deg,#60a5fa,#a78bfa)' },
+  title: { fontSize: 22, letterSpacing: 0.2, fontWeight: 700 },
+  subtitle: { opacity: 0.75, fontSize: 13 },
+  main: { display: 'grid', gridTemplateColumns: '380px 1fr', gap: 20, padding: 24, maxWidth: 1200, width: '100%', margin: '0 auto', flex: 1 },
+
+  // Panel izquierdo con recorte para que el dropdown no se “salga”
+  panelLeft: { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: 16, overflow: 'hidden' },
   panelRight: { display: 'grid', gap: 16, alignContent: 'start' },
-  h2: { margin: '4px 0 12px', fontSize: 16 },
-  field: { marginBottom: 14 },
-  label: { display: 'block', fontSize: 12, opacity: 0.8, marginBottom: 6 },
-  select: { width: '100%', background: '#121a22', border: '1px solid rgba(255,255,255,0.1)', color: '#e6eef7', padding: '10px 12px', borderRadius: 10, outline: 'none' },
-  input: { width: '100%', background: '#121a22', border: '1px solid rgba(255,255,255,0.1)', color: '#e6eef7', padding: '10px 12px', borderRadius: 10, outline: 'none' },
-  checklist: { display: 'grid', gap: 8, background: '#0f161d', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 10 },
+
+  h2: { margin: '4px 0 12px', fontSize: 16, fontWeight: 700 },
+  // position: relative para posicionar el menú respecto al campo
+  field: { marginBottom: 14, position: 'relative' },
+  label: { display: 'block', fontSize: 12, opacity: 0.85, marginBottom: 6 },
+
+  // Inputs coherentes
+  select: { width: '100%', background: '#0f1725', border: '1px solid rgba(255,255,255,0.16)', color: '#eef3fb', padding: '12px 14px', borderRadius: 12, outline: 'none', fontFamily: 'inherit' },
+  input: { width: '100%', background: '#0f1725', border: '1px solid rgba(255,255,255,0.16)', color: '#eef3fb', padding: '12px 14px', borderRadius: 12, outline: 'none', fontFamily: 'inherit' },
+
+  checklist: { display: 'grid', gap: 8, background: '#0b1320', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 10 },
   checkboxRow: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 },
+
   actions: { marginTop: 12, display: 'flex', gap: 10 },
-  buttonPrimary: { background: 'linear-gradient(135deg,#6ee7ff,#8b5cf6)', color: '#0b0f14', border: 'none', padding: '10px 14px', borderRadius: 10, cursor: 'pointer', fontWeight: 600 },
-  card: { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, overflow: 'hidden' },
-  cardHeader: { padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: 13, opacity: 0.9 },
-  code: { margin: 0, padding: 12, whiteSpace: 'pre-wrap', background: '#0f161d', color: '#d6e3f3', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace', fontSize: 13, lineHeight: 1.4 },
-  varsBox: { borderTop: '1px solid rgba(255,255,255,0.06)', padding: 12, background: 'rgba(255,255,255,0.02)' },
-  varsCode: { margin: 0, padding: 8, background: '#0f161d', color: '#cfe1f6', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace', fontSize: 12 },
-  muted: { opacity: 0.75, padding: 12, fontSize: 14 },
-  footer: { padding: 16, borderTop: '1px solid rgba(255,255,255,0.06)', textAlign: 'center', opacity: 0.7, fontSize: 12 },
+
+  // Botón rosado con gradiente
+  buttonPrimary: { background: 'linear-gradient(135deg,#f472b6,#f0abfc)', color: '#100a13', border: 'none', padding: '12px 16px', borderRadius: 12, cursor: 'pointer', fontWeight: 700, boxShadow: '0 8px 20px rgba(240,171,252,0.25)' },
+
+  card: { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, overflow: 'hidden' },
+  cardHeader: { padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)', fontSize: 13, opacity: 0.9, fontWeight: 600 },
+  code: { margin: 0, padding: 12, whiteSpace: 'pre-wrap', background: '#0b1320', color: '#dbe8ff', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace', fontSize: 13, lineHeight: 1.4 },
+  varsBox: { borderTop: '1px solid rgba(255,255,255,0.08)', padding: 12, background: 'rgba(255,255,255,0.03)' },
+  varsCode: { margin: 0, padding: 8, background: '#0b1320', color: '#cfe1ff', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace', fontSize: 12 },
+  muted: { opacity: 0.78, padding: 12, fontSize: 14 },
+  footer: { padding: 16, borderTop: '1px solid rgba(255,255,255,0.08)', textAlign: 'center', opacity: 0.75, fontSize: 12 },
+
+  comboWrap: { position: 'relative' },
+  // Menú recortado dentro del panel
+  menu: { position: 'absolute', top: '100%', left: 0, right: 0, background: '#0b1320', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, marginTop: 6, maxHeight: 220, overflowY: 'auto', zIndex: 1, boxShadow: '0 12px 28px rgba(0,0,0,0.45)' },
+  menuItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.06)' },
+  menuName: { fontSize: 14 },
+  menuId: { opacity: 0.65, fontSize: 12 },
+  hint: { opacity: 0.7, fontSize: 12, marginTop: 8 },
 };
