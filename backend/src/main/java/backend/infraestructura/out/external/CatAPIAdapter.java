@@ -16,8 +16,10 @@ import java.util.Properties;
 public class CatAPIAdapter {
 
     private static final String BASE_URL = "https://api.thecatapi.com/v1/breeds";
-    private static final String API_KEY = loadApiKey();
+    //private static final String API_KEY = loadApiKey();
+    private static final String API_KEY = System.getenv("THE_CAT_API_KEY");
 
+    /*
     // Carga la API Key desde el archivo .env local
     private static String loadApiKey() {
         try (InputStream input = new FileInputStream(".env")) {
@@ -28,7 +30,7 @@ public class CatAPIAdapter {
             System.err.println("Error: No se encontró el archivo .env o la clave.");
             return null;
         }
-    }
+    }*/
 
     // Llamado a TheCatAPI
     public Raza getRazaByID(String id) {
