@@ -15,5 +15,7 @@ WORKDIR /app
 # Copiar el JAR compilado desde la etapa anterior
 COPY --from=build /app/target/*.jar app.jar
 
+EXPOSE 8080
+
 # Comando por defecto
 CMD ["java", "-jar", "app.jar"]
